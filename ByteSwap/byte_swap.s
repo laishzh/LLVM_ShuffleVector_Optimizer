@@ -30,7 +30,7 @@ main:                                   # @main
 	addq	%rdx, %rsi
 	movq	%rsi, -32(%rbp)         # 8-byte Spill
 .LBB0_1:                                # =>This Inner Loop Header: Depth=1
-	cmpl	$100000, -16(%rbp)      # imm = 0x186A0
+	cmpl	$1000000, -16(%rbp)     # imm = 0xF4240
 	jge	.LBB0_4
 # BB#2:                                 #   in Loop: Header=BB0_1 Depth=1
 	movq	-32(%rbp), %rax         # 8-byte Reload

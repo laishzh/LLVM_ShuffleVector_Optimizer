@@ -31,7 +31,7 @@ main:                                   # @main
 	punpcklbw	%xmm1, %xmm0    # xmm0 = xmm0[0],xmm1[0],xmm0[1],xmm1[1],xmm0[2],xmm1[2],xmm0[3],xmm1[3],xmm0[4],xmm1[4],xmm0[5],xmm1[5],xmm0[6],xmm1[6],xmm0[7],xmm1[7]
 	movaps	%xmm0, -48(%rbp)        # 16-byte Spill
 .LBB0_1:                                # =>This Inner Loop Header: Depth=1
-	cmpl	$100000, -16(%rbp)      # imm = 0x186A0
+	cmpl	$1000000, -16(%rbp)     # imm = 0xF4240
 	jge	.LBB0_4
 # BB#2:                                 #   in Loop: Header=BB0_1 Depth=1
 	movaps	-48(%rbp), %xmm0        # 16-byte Reload
