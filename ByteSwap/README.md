@@ -1,36 +1,36 @@
-ByteSwap
-
- Performance counter stats for './byte_swap' (1000 runs):
-
-          0.399183 task-clock                #    0.689 CPUs utilized            ( +-  0.60% )
-                 0 context-switches          #    0.158 K/sec                    ( +- 12.61% )
-                 0 cpu-migrations            #    0.055 K/sec                    ( +- 22.05% )
-               113 page-faults               #    0.283 M/sec                    ( +-  0.01% )
-           641,036 cycles                    #    1.606 GHz                      ( +-  0.61% )
-           427,594 stalled-cycles-frontend   #   66.70% frontend cycles idle     ( +-  0.53% )
-           288,234 stalled-cycles-backend    #   44.96% backend  cycles idle     ( +-  0.59% )
-           486,575 instructions              #    0.76  insns per cycle        
-                                             #    0.88  stalled cycles per insn  ( +-  0.05% )
-            97,531 branches                  #  244.326 M/sec                    ( +-  0.04% )
-     <not counted> branch-misses           
-
-       0.000579185 seconds time elapsed                                          ( +-  0.65% )
-
 ShuffleVector
 
  Performance counter stats for './sfl_vec' (1000 runs):
 
-          0.404711 task-clock                #    0.684 CPUs utilized            ( +-  0.55% )
-                 0 context-switches          #    0.156 K/sec                    ( +- 12.41% )
-                 0 cpu-migrations            #    0.049 K/sec                    ( +- 22.15% )
-               113 page-faults               #    0.279 M/sec                    ( +-  0.01% )
-           638,817 cycles                    #    1.578 GHz                      ( +-  0.67% )
-           430,972 stalled-cycles-frontend   #   67.46% frontend cycles idle     ( +-  0.58% )
-           290,810 stalled-cycles-backend    #   45.52% backend  cycles idle     ( +-  0.67% )
-           486,244 instructions              #    0.76  insns per cycle        
-                                             #    0.89  stalled cycles per insn  ( +-  0.06% )
-            97,512 branches                  #  240.942 M/sec                    ( +-  0.04% )
-     <not counted> branch-misses           
+          4.453295 task-clock                #    0.952 CPUs utilized            ( +-  0.60% )
+                 0 context-switches          #    0.093 K/sec                    ( +-  4.00% )
+                 0 cpu-migrations            #    0.027 K/sec                    ( +-  9.25% )
+               139 page-faults               #    0.031 M/sec                    ( +-  0.01% )
+     <not counted> cycles                  
+         4,499,332 stalled-cycles-frontend   #   95.12% frontend cycles idle     ( +-  0.23% )
+           600,796 stalled-cycles-backend    #   12.70% backend  cycles idle     ( +-  1.20% )
+        11,451,385 instructions              #    2.42  insns per cycle        
+                                             #    0.39  stalled cycles per insn  ( +-  0.00% )
+         2,085,423 branches                  #  468.288 M/sec                    ( +-  0.00% )
+             1,963 branch-misses             #    0.09% of all branches          ( +-  2.49% )
 
-       0.000592044 seconds time elapsed                                          ( +-  0.68% )
+       0.004677592 seconds time elapsed                                          ( +-  0.58% )
+
+ByteSwap
+
+ Performance counter stats for './byte_swap' (1000 runs):
+
+          4.492368 task-clock                #    0.953 CPUs utilized            ( +-  0.57% )
+                 0 context-switches          #    0.094 K/sec                    ( +-  3.86% )
+                 0 cpu-migrations            #    0.027 K/sec                    ( +-  9.34% )
+               139 page-faults               #    0.031 M/sec                    ( +-  0.01% )
+         4,897,603 cycles                    #    1.090 GHz                      ( +-  1.44% ) [68.73%]
+         4,497,303 stalled-cycles-frontend   #   91.83% frontend cycles idle     ( +-  0.22% )
+           507,080 stalled-cycles-backend    #   10.35% backend  cycles idle     ( +-  1.16% )
+         9,448,124 instructions              #    1.93  insns per cycle        
+                                             #    0.48  stalled cycles per insn  ( +-  0.00% )
+         2,084,827 branches                  #  464.082 M/sec                    ( +-  0.00% )
+             2,019 branch-misses             #    0.10% of all branches          ( +-  2.81% ) [61.32%]
+
+       0.004714244 seconds time elapsed                                          ( +-  0.55% )
 
