@@ -8,3 +8,5 @@ getShuffleMask() returns the full mask for this instruction, where each element 
 
 ##visitShuffleVectorInst Functions##
 There are several visitShuffleVectorInst Functions in different classes, such as InstCombiner, Scalarizer, Interpreter, Verifier, and so on. This means you can do different works in different periods of compilation, and execution.
+
+In the file [InstCombineVectorOps.cpp](https://github.com/laishzh/llvm/blob/master/lib/Transforms/InstCombine/InstCombineVectorOps.cpp), implements instcombine for ExtractElement, InsertElement and ShuffleVector. We can read about the function InstCombiner::visitShuffleVectorInst to see how the InstCombiner to optimize the shufflevector.
