@@ -48,7 +48,7 @@ void do_process(FILE *infile) {
         printf("chars_avail:%d\n", chars_avail);
         for (blk = 0; blk < SEGMENT_BLOCKS; blk++) {
             block_base = blk * BLOCK_SIZE;
-            //s2p_do_block((BytePack *) &src_buffer[block_base], basis_bits);
+            s2p_do_block((BytePack *) &src_buffer[block_base], basis_bits);
         }
         chars_avail = fread(&src_buffer[0], 1, SEGMENT_SIZE, infile);
     }
