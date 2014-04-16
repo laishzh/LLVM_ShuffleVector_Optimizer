@@ -57,3 +57,11 @@ turning: (splat(splat)) -> splat, or
 merge(V[0..n], V[n+1..2n]) -> V[0..2n]                                  
 
 ##ShuffleVector in Assembly 
+The directory [Target](https://github.com/laishzh/llvm/blob/master/lib/Target/) 
+contains many files to generate specific code for the specific instruction set 
+and machine. Take [X86](https://github.com/laishzh/llvm/blob/master/lib/Target/X86)
+for example. In the file [X86ISelLowering.cpp](https://github.com/laishzh/llvm/blob/master/lib/Target/X86/X86ISelLowering.cpp), 
+llvm translates the shuffle operation into a specific assembly instruction on X86 instruction set.
+With the help of isVectorShift and isMOVLMask, X86TargetLowering::LowerVECTOR_SHUFFLE checks whether
+the shuffle operation can be replaced by one instruction.
+
