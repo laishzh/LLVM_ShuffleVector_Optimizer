@@ -97,14 +97,13 @@ main:                                   # @main
 	.type	.L.str,@object          # @.str
 	.section	.rodata.str1.1,"aMS",@progbits,1
 .L.str:
-	.asciz	"%02X %02X %02X %02X "
+	.asciz	 "%02X %02X %02X %02X "
 	.size	.L.str, 21
 
 	.type	.L.str1,@object         # @.str1
 .L.str1:
-	.asciz	"%02X %02X %02X %02X\n"
+	.asciz	 "%02X %02X %02X %02X\n"
 	.size	.L.str1, 21
 
 
-	.ident	"Ubuntu clang version 3.4.1-1~exp1 (branches/release_34) (based on LLVM 3.4.1)"
 	.section	".note.GNU-stack","",@progbits
