@@ -1,2 +1,36 @@
 SFL64
+
+ Performance counter stats for './sfl_vec_64' (1000 runs):
+
+          3.047661 task-clock                #    0.959 CPUs utilized            ( +-  0.57% )
+                 0 context-switches          #    0.094 K/sec                    ( +-  5.02% )
+                 0 cpu-migrations            #    0.008 K/sec                    ( +- 20.62% )
+               146 page-faults               #    0.048 M/sec                    ( +-  0.01% )
+         5,302,548 cycles                    #    1.740 GHz                      ( +-  1.73% )
+           891,950 stalled-cycles-frontend   #   16.82% frontend cycles idle     ( +-  0.54% )
+           375,846 stalled-cycles-backend    #    7.09% backend  cycles idle     ( +-  0.48% )
+        18,335,529 instructions              #    3.46  insns per cycle        
+                                             #    0.05  stalled cycles per insn  ( +-  0.00% )
+           300,309 branches                  #   98.538 M/sec                    ( +-  0.05% )
+             2,081 branch-misses             #    0.69% of all branches          ( +-  5.79% ) [50.72%]
+
+       0.003177017 seconds time elapsed                                          ( +-  0.57% )
+
 ByteSwap64
+
+ Performance counter stats for './byte_swap_64' (1000 runs):
+
+          2.028774 task-clock                #    0.894 CPUs utilized            ( +-  0.62% )
+                 0 context-switches          #    0.113 K/sec                    ( +-  6.00% )
+                 0 cpu-migrations            #    0.011 K/sec                    ( +- 21.52% )
+               146 page-faults               #    0.072 M/sec                    ( +-  0.01% )
+         2,147,383 cycles                    #    1.058 GHz                      ( +-  1.01% )
+           422,576 stalled-cycles-frontend   #   19.68% frontend cycles idle     ( +-  0.87% )
+           323,129 stalled-cycles-backend    #   15.05% backend  cycles idle     ( +-  0.27% )
+         5,531,928 instructions              #    2.58  insns per cycle        
+                                             #    0.08  stalled cycles per insn  ( +-  0.00% )
+           299,547 branches                  #  147.649 M/sec                    ( +-  0.01% )
+               963 branch-misses             #    0.32% of all branches          ( +-  7.01% ) [39.67%]
+
+       0.002269793 seconds time elapsed                                          ( +-  0.62% )
+
