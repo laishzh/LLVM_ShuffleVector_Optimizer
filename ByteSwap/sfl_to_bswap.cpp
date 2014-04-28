@@ -4,10 +4,18 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
 
+static bool isByteSwap(VectorType &LHS, VectorType &RHS,
+                       SmallVector<int, 16> &Masks)
+{
+
+    return false;
+}
+
 using namespace llvm;
 namespace {
     class ShufflevectorToByteSwapPass:public llvm::BasicBlockPass {
     public:
+
         ShufflevectorToByteSwapPass() : BasicBlockPass(ID) {}
         virtual bool runOnBasicBlock(llvm::BasicBlock &bb) {
             errs() << "Hello: \n";
@@ -88,7 +96,11 @@ namespace {
                                 errs() << checkmasks[i] << " ";
                             }
                             errs() << "\n";
+                        } else {
+                            errs() << "Cannot be translated.\n";
+                            //TODO:change this
                         }
+
 
                     }
 
