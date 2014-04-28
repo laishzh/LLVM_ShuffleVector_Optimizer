@@ -24,10 +24,11 @@ namespace {
                     errs() << "LHSWidth: " << LHSWidth << "; " << "LHSBitWidth: " << LHSBitWidth << "\n";
 
                     Type *ElementType = cast<VectorType>(LHS->getType())->getElementType();
+                    unsigned ElementWidth = 0;
 
                     if (IntegerType *it = dyn_cast<IntegerType>(ElementType)) {
-                        errs() << "It's a IntegerType and it has " << it->getBitWidth() << " Bits." << "\n";
-
+                        ElementWidth = it->getBitWidth();
+                        errs() << "It's a IntegerType and it has " << ElementWidth << " Bits." << "\n";
                     }
                     errs() << cast<VectorType>(LHS->getType())->getElementType()->isIntegerTy(8) << "\n";
                     errs() << cast<VectorType>(LHS->getType())->getElementType()->isIntegerTy(16) << "\n";
@@ -41,15 +42,56 @@ namespace {
                     errs() << "\n";
                     SmallVector<int, 16> masks(si->getShuffleMask());
 
-                    //si->getShuffleMask(masks);
                     errs() << masks.size() << " masks.\n";
+
                     for (unsigned i = 0; i < masks.size(); ++i) {
-                        errs() << i << " ";
+                        errs() << masks[i] << " ";
                         if (i % 8 == 7) {
                             errs() << '\n';
                         }
                     }
                     errs() << "\n";
+
+                    IntegerType *it = dyn_cast<IntegerType>(ElementType);
+                    if (VWidth > 0
+                        && VWidth % 8 == 0
+                        && it != nullptr
+                        && it->isIntegerTy(8)) {
+                        //Check if ShuffleVector can be translated into
+                        //several llvm.bswap.i64 operations.
+                        SmallVector<int, 8> checkmasks;
+                        bool checkflag = true;
+                        for (unsigned i = 0; i < VWidth / 8; ++i) {
+                            unsigned base = masks[i * 8];
+                            if (base % 8 != 7) {
+                                checkflag = false;
+                                errs() << "Break at Base: " << base << "\n";
+                                break;
+                            }
+                            for (unsigned j = 1; j < 8; ++j) {
+                                if (base - masks[i*8 + j] != j) {
+                                    checkflag = false;
+                                    errs() << "Break at: " << i << ":" << j << "\n";
+                                    break;
+                                }
+                            }
+                            if (!checkflag) {
+                                break;
+                            } else {
+                                checkmasks.push_back(base / 8);
+                            }
+                        }
+
+                        if (checkflag) {
+                            errs() << "Can be translated.\n";
+                            for (unsigned i = 0; i < checkmasks.size(); ++i) {
+                                errs() << checkmasks[i] << " ";
+                            }
+                            errs() << "\n";
+                        }
+
+                    }
+
                 }
                     //DEBUG(errs() << "I am here!\n");
             }
