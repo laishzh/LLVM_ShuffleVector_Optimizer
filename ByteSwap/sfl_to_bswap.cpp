@@ -1,3 +1,4 @@
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/Pass.h"
@@ -14,6 +15,8 @@ static bool isByteSwap64(ShuffleVectorInst &SI, SmallVector<int, 16>&RefMasks)
     VectorType *RHS = cast<VectorType>(SI.getOperand(1)->getType());
 
     IntegerType *IT = dyn_cast<IntegerType>(LHS->getElementType());
+    //When Element Type is not IntegerType or the Result's element number
+    //can't be divided by 8, return false
     if (IT == nullptr
         || ! IT->isIntegerTy(8)
         || VWidth % 8 != 0) {
@@ -54,14 +57,16 @@ static bool isByteSwap64(ShuffleVectorInst &SI, SmallVector<int, 16>&RefMasks)
 static void replaceShuffleVectorWithByteSwap64(
     ShuffleVectorInst &SI, SmallVector<int, 16> &RefMasks)
 {
-    VectorType *LHS = cast<VectorType>(SI->getOperand(0));
-    VectorType *RHS = cast<VectorType>(SI->getOperand(1));
-    unsigned LHSWidth = LHS->getBitWidth();
-    unsigned RHSWidth = RHS->getBitWidth();
+    Value *LHS = SI.getOperand(0);
+    Value *RHS = SI.getOperand(1);
+    VectorType *LHSType = cast<VectorType>(SI.getOperand(0));
+    VectorType *RHSType = cast<VectorType>(SI.getOperand(1));
+    unsigned LHSWidth = LHSType->getBitWidth();
+    unsigned RHSWidth = RHSType->getBitWidth();
 
     VectorType *Ty1 = VectorType::get(
-            Type::getInt8Ty(&llvm::getGlobalContext()),
-        LHSWidth / (64 * 8));
+        Type::getInt8Ty(llvm::getGlobalContext()),
+        LHSWidth / 64);
 
     CastInst *v1 = CastInst::CreateIntegerCast(
         LHS, Ty1, false/*, insertbefore*/);
