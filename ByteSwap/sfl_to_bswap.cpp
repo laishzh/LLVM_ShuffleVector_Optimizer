@@ -51,8 +51,20 @@ static bool isByteSwap64(ShuffleVectorInst &SI, SmallVector<int, 16>&RefMasks)
     return isByteSwap;
 }
 
-static void replaceShuffleVectorWithByteSwap64()
+static void replaceShuffleVectorWithByteSwap64(
+    ShuffleVectorInst &SI, SmallVector<int, 16> &RefMasks)
 {
+    VectorType *LHS = cast<VectorType>(SI->getOperand(0));
+    VectorType *RHS = cast<VectorType>(SI->getOperand(1));
+    unsigned LHSWidth = LHS->getBitWidth();
+    unsigned RHSWidth = RHS->getBitWidth();
+
+    VectorType *Ty1 = VectorType::get(
+            Type::getInt8Ty(&llvm::getGlobalContext()),
+        LHSWidth / (64 * 8));
+
+    CastInst *v1 = CastInst::CreateIntegerCast(
+        LHS, Ty1, false/*, insertbefore*/);
 
     return ;
 }
