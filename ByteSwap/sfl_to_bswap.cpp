@@ -81,6 +81,7 @@ static void replaceShuffleVectorWithByteSwap64(
     BitCastInst *BCI1 = new BitCastInst(
         LHS, Ty1, "", SI);
 
+    //TODO:Remove ShuffleVectorInst
     SmallVector<Constant *, 16> BigMasks;
     for (unsigned i = 0; i < ITEMNUM; ++i) {
         APInt num(32, ITEMNUM - i - 1);
@@ -113,6 +114,24 @@ static void replaceShuffleVectorWithByteSwap64(
         Value *Op = EEI;
         CallInst *CaI = CallInst::Create(Int, Op, "", SI);
         CIS.push_back(CaI);
+    }
+
+    VectorType *Ty2 = VectorType::get(
+        Type::getInt64Ty(SI->getContext()),
+        1);
+
+    BitCastInst *BCIW = new BitCastInst(
+        CIS[0], Ty2, "", SI);
+
+    Value *V = BCIW;
+    for (unsigned i = 1; i < CIS.size(); ++i) {
+        Value *Elt = CIS[i];
+        InsertElementInst *IEI =
+            InsertElementInst::Create(
+                V, Elt,
+                ConstantInt::get(Type::getInt32Ty(SI->getContext()), 0),
+                "", SI);
+        V = IEI;
     }
 
 
