@@ -1,6 +1,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
@@ -9,6 +10,7 @@
 using namespace llvm;
 static bool isByteSwap64(ShuffleVectorInst &SI, SmallVector<int, 16>&RefMasks)
 {
+
     RefMasks.clear();
     unsigned VWidth = cast<VectorType>(SI.getType())->getNumElements();
     VectorType *LHS = cast<VectorType>(SI.getOperand(0)->getType());
@@ -17,6 +19,7 @@ static bool isByteSwap64(ShuffleVectorInst &SI, SmallVector<int, 16>&RefMasks)
     IntegerType *IT = dyn_cast<IntegerType>(LHS->getElementType());
     //When Element Type is not IntegerType or the Result's element number
     //can't be divided by 8, return false
+    //TODO:Need to check all masks are all constants.
     if (IT == nullptr
         || ! IT->isIntegerTy(8)
         || VWidth % 8 != 0) {
@@ -55,23 +58,36 @@ static bool isByteSwap64(ShuffleVectorInst &SI, SmallVector<int, 16>&RefMasks)
 }
 
 static void replaceShuffleVectorWithByteSwap64(
-    ShuffleVectorInst &SI, SmallVector<int, 16> &RefMasks)
+    ShuffleVectorInst *SI, SmallVector<int, 16> &RefMasks)
 {
-    Value *LHS = SI.getOperand(0);
-    Value *RHS = SI.getOperand(1);
-    VectorType *LHSType = cast<VectorType>(SI.getOperand(0));
-    VectorType *RHSType = cast<VectorType>(SI.getOperand(1));
+    Value *LHS = SI->getOperand(0);
+    Value *RHS = SI->getOperand(1);
+    VectorType *LHSType = cast<VectorType>(LHS->getType());
+    VectorType *RHSType = cast<VectorType>(RHS->getType());
     unsigned LHSWidth = LHSType->getBitWidth();
+    errs() << "In Replace: " << LHSWidth << "\n";
     unsigned RHSWidth = RHSType->getBitWidth();
 
+    //ReplaceWork begins
+    //TODO:Make it automatic and compact
+
     VectorType *Ty1 = VectorType::get(
-        Type::getInt8Ty(llvm::getGlobalContext()),
+        Type::getInt64Ty(llvm::getGlobalContext()),
         LHSWidth / 64);
 
     CastInst *v1 = CastInst::CreateIntegerCast(
-        LHS, Ty1, false/*, insertbefore*/);
+        LHS, Ty1, false, "", SI);
+    for (unsigned i = 0; i < LHSWidth / 64; ++i) {
+        ExtractElementInst *EVI1 = ExtractElementInst::Create(
+            v1,
+            ConstantInt::get(
+                Type::getInt32Ty(
+                    llvm::getGlobalContext()), i),
+            "",
+            SI);
+    }
 
-    return ;
+return ;
 }
 
 namespace {
@@ -81,7 +97,7 @@ namespace {
         ShufflevectorToByteSwapPass() : BasicBlockPass(ID) {}
         virtual bool runOnBasicBlock(llvm::BasicBlock &bb) {
             errs() << "Hello: \n";
-            bool retval = false;
+            bool isModified = false;
             for (llvm::BasicBlock::iterator bbit = bb.begin();
                  bbit != bb.end(); ++bbit) {
                 Instruction *isn = bbit;
@@ -142,6 +158,8 @@ namespace {
                             errs() << RefMasks[i] << " ";
                         }
                         errs() << "\n";
+                        replaceShuffleVectorWithByteSwap64(si, RefMasks);
+                        isModified = true;
                     } else {
                         errs() << "Shufflevector cannot be translated "
                             "into ByteSwap.\n";
@@ -149,10 +167,11 @@ namespace {
 
 
 
+
                 }
                     //DEBUG(errs() << "I am here!\n");
             }
-            return false;
+            return isModified;
         }
         static char ID;
 
