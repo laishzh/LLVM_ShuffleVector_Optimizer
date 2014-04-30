@@ -2,6 +2,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Intrinsics.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
@@ -71,23 +73,51 @@ static void replaceShuffleVectorWithByteSwap64(
     //ReplaceWork begins
     //TODO:Make it automatic and compact
 
+    unsigned ITEMNUM = LHSWidth / 64;
     VectorType *Ty1 = VectorType::get(
-        Type::getInt64Ty(llvm::getGlobalContext()),
-        LHSWidth / 64);
+        Type::getInt64Ty(SI->getContext()),
+                ITEMNUM);
 
-    CastInst *v1 = CastInst::CreateIntegerCast(
-        LHS, Ty1, false, "", SI);
-    for (unsigned i = 0; i < LHSWidth / 64; ++i) {
-        ExtractElementInst *EVI1 = ExtractElementInst::Create(
-            v1,
+    BitCastInst *BCI1 = new BitCastInst(
+        LHS, Ty1, "", SI);
+
+    SmallVector<Constant *, 16> BigMasks;
+    for (unsigned i = 0; i < ITEMNUM; ++i) {
+        APInt num(32, ITEMNUM - i - 1);
+        BigMasks.push_back(
+            Constant::getIntegerValue(
+                Type::getInt32Ty(SI->getContext()),
+                num));
+    }
+    Constant *Masks = ConstantVector::get(BigMasks);
+    ShuffleVectorInst *SVI = new ShuffleVectorInst(
+        BCI1, UndefValue::get(BCI1->getType()),
+        Masks,//Mask is ConstantVector
+        "",
+        SI);
+
+    SmallVector<CallInst *, 16> CIS;
+
+    for (unsigned i = 0; i < ITEMNUM; ++i) {
+        ConstantInt *CI =
             ConstantInt::get(
                 Type::getInt32Ty(
-                    llvm::getGlobalContext()), i),
-            "",
-            SI);
+                    SI->getContext()), i);
+        ExtractElementInst *EEI = ExtractElementInst::Create(
+            SVI, CI, "", SI);
+        //EVIS.push_back(EEI);
+
+        Module *M = SI->getParent()->getParent()->getParent();
+        Constant *Int = Intrinsic::getDeclaration(
+            M, Intrinsic::bswap, EEI->getType());
+        Value *Op = EEI;
+        CallInst *CaI = CallInst::Create(Int, Op, "", SI);
+        CIS.push_back(CaI);
     }
 
-return ;
+
+
+    return ;
 }
 
 namespace {
