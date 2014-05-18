@@ -34,5 +34,20 @@ _pext_u64(unsigned long long __X, unsigned long long __Y)
 }
 ```
 
-Before use these instructions, just ``include <x86intrin.h>`` and pass ``bmi2`` as
-the machine option when compilation.
+Before use these instructions, check whether the machine supports
+these instructions, and just ``include <x86intrin.h>`` and pass
+``bmi2`` as the machine option when compilation.
+
+
+By default clang compilation 
+
+#LLVM llc view SelectionDAG Graph#
+
+* **view-dag-combine1-dags** Pop up a window to show dags before the first dag combine pass
+* **view-legalize-types-dags** Pop up a window to show dags before legalize types
+* **view-legalize-dags** Pop up a window to show dags before legalize
+* **iew-dag-combine2-dags** Pop up a window to show dags before the second dag combine pass
+* **view-dag-combine-lt-dags** Pop up a window to show dags before the post legalize types dag combine pass
+* **view-isel-dags** Pop up a window to show isel dags as they are selected
+* **view-sched-dags** Pop up a window to show sched dags as they are processed
+* **view-sunit-dags** Pop up a window to show SUnit dags after they are processed
