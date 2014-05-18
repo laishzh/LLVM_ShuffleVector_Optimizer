@@ -43,6 +43,8 @@ By default clang compilation
 
 #LLVM llc view SelectionDAG Graph#
 
+The following options will be built from the llvm source code package, not in the tools installed from Ubuntu's apt. And appending -help-hidden after llc shows the details.
+
 * **view-dag-combine1-dags** Pop up a window to show dags before the first dag combine pass
 * **view-legalize-types-dags** Pop up a window to show dags before legalize types
 * **view-legalize-dags** Pop up a window to show dags before legalize
