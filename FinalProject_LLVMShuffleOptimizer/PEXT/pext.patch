@@ -1,0 +1,217 @@
+diff --git a/lib/Target/X86/X86CallingConv.td b/lib/Target/X86/X86CallingConv.td
+index a78b5c0..66d2e30 100644
+--- a/lib/Target/X86/X86CallingConv.td
++++ b/lib/Target/X86/X86CallingConv.td
+@@ -37,6 +37,10 @@ def RetCC_X86Common : CallingConv<[
+   CCIfType<[i32], CCAssignToReg<[EAX, EDX, ECX]>>,
+   CCIfType<[i64], CCAssignToReg<[RAX, RDX, RCX]>>,
+ 
++  //Vector type v32i1 is stored in GR32Reg.
++  CCIfType<[v32i1], CCAssignToReg<[EAX, EDX, ECX]>>,
++  
++
+   // Vector types are returned in XMM0 and XMM1, when they fit.  XMM2 and XMM3
+   // can only be used by ABI non-compliant code. If the target doesn't have XMM
+   // registers, it won't have vector types.
+@@ -230,6 +234,9 @@ def CC_X86_64_C : CallingConv<[
+   CCIfType<[i32], CCAssignToReg<[EDI, ESI, EDX, ECX, R8D, R9D]>>,
+   CCIfType<[i64], CCAssignToReg<[RDI, RSI, RDX, RCX, R8 , R9 ]>>,
+ 
++  //Vector type v32i1 is stored in GR32Reg. 
++  CCIfType<[v32i1], CCAssignToReg<[EDI, ESI, EDX, ECX, R8D, R9D]>>,
++
+   // The first 8 MMX vector arguments are passed in XMM registers on Darwin.
+   CCIfType<[x86mmx],
+             CCIfSubtarget<"isTargetDarwin()",
+diff --git a/lib/Target/X86/X86ISelLowering.cpp b/lib/Target/X86/X86ISelLowering.cpp
+index 76eeb64..fbc7b28 100644
+--- a/lib/Target/X86/X86ISelLowering.cpp
++++ b/lib/Target/X86/X86ISelLowering.cpp
+@@ -287,6 +287,9 @@ void X86TargetLowering::resetOperationActions() {
+   addRegisterClass(MVT::i8, &X86::GR8RegClass);
+   addRegisterClass(MVT::i16, &X86::GR16RegClass);
+   addRegisterClass(MVT::i32, &X86::GR32RegClass);
++
++  addRegisterClass(MVT::v32i1, &X86::VR32RegClass);
++
+   if (Subtarget->is64Bit())
+     addRegisterClass(MVT::i64, &X86::GR64RegClass);
+ 
+@@ -868,6 +871,8 @@ void X86TargetLowering::resetOperationActions() {
+     setLoadExtAction(ISD::ZEXTLOAD, VT, Expand);
+     setLoadExtAction(ISD::EXTLOAD, VT, Expand);
+   }
++  //Add Here in case of being overwriting.
++  setOperationAction(ISD::VECTOR_SHUFFLE, MVT::v32i1, Custom);
+ 
+   // FIXME: In order to prevent SSE instructions being expanded to MMX ones
+   // with -msoft-float, disable use of MMX as well.
+@@ -908,6 +913,8 @@ void X86TargetLowering::resetOperationActions() {
+   setOperationAction(ISD::BITCAST,            MVT::v2i32, Expand);
+   setOperationAction(ISD::BITCAST,            MVT::v1i64, Expand);
+ 
++  setOperationAction(ISD::BITCAST,            MVT::v32i1, Legal);
++
+   if (!TM.Options.UseSoftFloat && Subtarget->hasSSE1()) {
+     addRegisterClass(MVT::v4f32, &X86::VR128RegClass);
+ 
+@@ -2226,6 +2233,10 @@ X86TargetLowering::LowerFormalArguments(SDValue Chain,
+         RC = &X86::VK8RegClass;
+       else if (RegVT == MVT::v16i1)
+         RC = &X86::VK16RegClass;
++
++      //Add to make v32i1 as argument available
++      else if (RegVT == MVT::v32i1)
++          RC = &X86::VR32RegClass;
+       else
+         llvm_unreachable("Unknown argument type!");
+ 
+@@ -3632,6 +3643,9 @@ static bool isPALIGNRMask(ArrayRef<int> Mask, MVT VT,
+   if ((VT.is128BitVector() && !Subtarget->hasSSSE3()) ||
+       (VT.is256BitVector() && !Subtarget->hasInt256()))
+     return false;
++  //Return false when VT's Bit Size is less than 128
++  if (VT.getSizeInBits() < 128)
++    return false;
+ 
+   unsigned NumElts = VT.getVectorNumElements();
+   unsigned NumLanes = VT.is512BitVector() ? 1: VT.getSizeInBits()/128;
+@@ -3792,6 +3806,47 @@ static bool isMOVHLPSMask(ArrayRef<int> Mask, MVT VT) {
+          isUndefOrEqual(Mask[3], 3);
+ }
+ 
++/// isPEXTMask - Return true if the specified VECTOR_SHUFFLE operand
++/// specifies a shuffle of elements that is suitable for input to PEXT in haswell architecture.
++static bool isPEXTMask(ArrayRef<int> Mask, MVT VT, SDValue V1, SDValue V2) {
++
++    if (VT != MVT::v32i1)
++        return false;
++    if (ConstantSDNode *CN = dyn_cast<ConstantSDNode>(
++            V2.getOperand(0))) {
++        if (!CN->isNullValue())
++            //If elements in V2 are not Zero
++            return false;
++    }
++
++    unsigned i = 0;
++    //Get the first non-zero element
++    for (i = 0; i < Mask.size(); ++i) {
++        if (Mask[i] < 32) {
++            break;
++        }
++    }
++
++    if (i >= 32) {
++        return false;
++    }
++
++    //Get last element
++    int last = Mask[i];
++    //Point to next element
++    ++i;
++
++    for ( ; i < Mask.size(); ++i) {
++        if (Mask[i] <= last) {
++            //Return false if the mask elements are not
++            //in strictly increasing order.
++            return false;
++        }
++    }
++
++    return true;
++}
++
+ /// isMOVHLPS_v_undef_Mask - Special case of isMOVHLPSMask for canonical form
+ /// of vector_shuffle v, v, <2, 3, 2, 3>, i.e. vector_shuffle v, undef,
+ /// <2, 3, 2, 3>
+@@ -4800,6 +4855,36 @@ static SDValue getMOVL(SelectionDAG &DAG, SDLoc dl, EVT VT, SDValue V1,
+   return DAG.getVectorShuffle(VT, dl, V1, V2, &Mask[0]);
+ }
+ 
++/// getPEXT - Returns a PEXT node for an pext operation.
++static SDValue getPEXT(SelectionDAG &DAG, SDLoc dl, EVT VT, SDValue V1,
++                       SDValue V2, ArrayRef<int> Mask) {
++    //TODO: We can use bitcast to support the wider vector types
++    if (VT == MVT::v32i1) {
++
++        unsigned NumElts = Mask.size();
++        //Generate the new mask immediate number for pext instruction
++        unsigned IntMask = 0;
++        for (unsigned i = 0; i < NumElts; ++i) {
++            if (Mask[i] < 32) {
++                IntMask |= 0x1 << (31 - Mask[i]);
++            }
++        }
++
++        //Get a PEXT Node with the mask number.
++        SDValue V = DAG.getNode(ISD::INTRINSIC_WO_CHAIN, dl,
++            MVT::i32,
++            DAG.getConstant(Intrinsic::x86_bmi_pext_32, MVT::i32),
++            //Operand 1,
++            DAG.getNode(ISD::BITCAST, dl, MVT::i32, V1),
++            //Operand 2,
++            DAG.getConstant(IntMask, MVT::i32));
++        return V;
++    }
++
++    return SDValue();
++
++}
++
+ /// getUnpackl - Returns a vector_shuffle node for an unpackl operation.
+ static SDValue getUnpackl(SelectionDAG &DAG, SDLoc dl, MVT VT, SDValue V1,
+                           SDValue V2) {
+@@ -7321,8 +7406,10 @@ X86TargetLowering::LowerVECTOR_SHUFFLE(SDValue Op, SelectionDAG &DAG) const {
+     return getMOVHighToLow(Op, dl, DAG);
+ 
+   // Use to match splats
+-  if (HasSSE2 && isUNPCKHMask(M, VT, HasInt256) && V2IsUndef &&
+-      (VT == MVT::v2f64 || VT == MVT::v2i64))
++    //Chang the order because the isUNPCKHMask will raise error when
++    //MVT::v32i1
++  if ((VT == MVT::v2f64 || VT == MVT::v2i64) &&
++      HasSSE2 && isUNPCKHMask(M, VT, HasInt256) && V2IsUndef)
+     return getTargetShuffleNode(X86ISD::UNPCKH, dl, VT, V1, V1, DAG);
+ 
+   if (isPSHUFDMask(M, VT)) {
+@@ -7426,6 +7513,13 @@ X86TargetLowering::LowerVECTOR_SHUFFLE(SDValue Op, SelectionDAG &DAG) const {
+     return getMOVL(DAG, dl, VT, V2, V1);
+   }
+ 
++
++
++  if (V2IsSplat && isPEXTMask(M, VT, V1, V2)) {
++      return getPEXT(DAG, dl, VT, V1, V2, M);
++  }
++
++
+   if (isUNPCKLMask(M, VT, HasInt256))
+     return getTargetShuffleNode(X86ISD::UNPCKL, dl, VT, V1, V2, DAG);
+ 
+diff --git a/lib/Target/X86/X86InstrInfo.td b/lib/Target/X86/X86InstrInfo.td
+index 6e5d543..5102b1a 100644
+--- a/lib/Target/X86/X86InstrInfo.td
++++ b/lib/Target/X86/X86InstrInfo.td
+@@ -1917,6 +1917,9 @@ let Predicates = [HasBMI2] in {
+                                int_x86_bmi_pext_64, loadi64>, T8XS, VEX_W;
+ }
+ 
++//Bitconvert from v32i1 to i32 without any action
++def : Pat <(i32 (bitconvert (v32i1 VR32:$src))), (i32 VR32:$src)>;
++
+ //===----------------------------------------------------------------------===//
+ // TBM Instructions
+ //
+diff --git a/lib/Target/X86/X86RegisterInfo.td b/lib/Target/X86/X86RegisterInfo.td
+index b802728..d3596a4 100644
+--- a/lib/Target/X86/X86RegisterInfo.td
++++ b/lib/Target/X86/X86RegisterInfo.td
+@@ -432,6 +432,8 @@ def RST : RegisterClass<"X86", [f80, f64, f32], 32, (sequence "ST%u", 0, 7)> {
+ }
+ 
+ // Generic vector registers: VR64 and VR128.
++//TODO:
++def VR32: RegisterClass<"X86", [v32i1, i32], 32, (add GR32)>;
+ def VR64: RegisterClass<"X86", [x86mmx], 64, (sequence "MM%u", 0, 7)>;
+ def VR128 : RegisterClass<"X86", [v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
+                           128, (add FR32)>;
